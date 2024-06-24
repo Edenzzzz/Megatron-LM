@@ -13,10 +13,9 @@ NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NUM_NODES))
 
 CHECKPOINT_PATH=$1 #<Specify path>
-TENSORBOARD_LOGS_PATH=$2 #<Specify path>
-VOCAB_FILE=$3 #<Specify path to file>/gpt2-vocab.json
-MERGE_FILE=$4 #<Specify path to file>/gpt2-merges.txt
-DATA_PATH=$5 #<Specify path and file prefix>_text_document
+VOCAB_FILE=$2 #<Specify path to file>/gpt2-vocab.json
+MERGE_FILE=$3 #<Specify path to file>/gpt2-merges.txt
+DATA_PATH=$4 #<Specify path and file prefix>_text_document
 
 DISTRIBUTED_ARGS=(
     --nproc_per_node $GPUS_PER_NODE 
@@ -24,19 +23,20 @@ DISTRIBUTED_ARGS=(
     --master_addr $MASTER_ADDR 
     --master_port $MASTER_PORT
 )
-
+# 7b model (https://github.com/NVIDIA/NeMo-Framework-Launcher/blob/6daee02ad897b6f8fb468a518edcdb9bda9c36c7/launcher_scripts/conf/training/gpt3/7b_improved.yaml)
 GPT_MODEL_ARGS=(
-    --num-layers 96 
-    --hidden-size 12288 
-    --num-attention-heads 96 
-    --seq-length 2048 
-    --max-position-embeddings 2048 
+    --num-layers 32 
+    --hidden-size 4096 
+    --num-attention-heads 32 
+    --seq-length 32768 
+    --max-position-embeddings 32768 
+    --ffn-hidden-size 10880
 )
 
 TRAINING_ARGS=(
-    --micro-batch-size 1 
-    --global-batch-size 1536 
-    --rampup-batch-size 16 16 5859375 
+    --micro-batch-size 1
+    # --global-batch-size 1536 
+    # --rampup-batch-size 16 16 5859375 
     --train-iters 500000 
     --weight-decay 0.1 
     --adam-beta1 0.9 
@@ -52,8 +52,9 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 8 
-	--pipeline-model-parallel-size 16 
+	--tensor-model-parallel-size 4
+	--context-parallel-size 2
+    --use-flash-attn
 )
 
 DATA_ARGS=(
@@ -64,18 +65,18 @@ DATA_ARGS=(
 )
 
 EVAL_AND_LOGGING_ARGS=(
-    --log-interval 100
+    --log-interval 40
     --save-interval 10000 
     --eval-interval 1000 
     --save $CHECKPOINT_PATH 
     --load $CHECKPOINT_PATH 
     --eval-iters 10
-    --tensorboard-dir $TENSORBOARD_LOGS_PATH 
 )
-
+# nsys profile -o profile --force-overwrite true --capture-range=cudaProfilerApi --capture-range-end=stop \
 torchrun ${DISTRIBUTED_ARGS[@]} pretrain_gpt.py \
     ${GPT_MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
     ${MODEL_PARALLEL_ARGS[@]} \
     ${DATA_ARGS[@]} \
-    ${EVAL_AND_LOGGING_ARGS[@]}
+    ${EVAL_AND_LOGGING_ARGS[@]} \
+    #--profile
