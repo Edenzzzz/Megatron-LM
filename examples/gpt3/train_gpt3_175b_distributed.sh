@@ -4,7 +4,7 @@
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-GPUS_PER_NODE=8
+GPUS_PER_NODE=4
 # Change for multinode config
 MASTER_ADDR=localhost
 MASTER_PORT=6000
@@ -28,7 +28,7 @@ GPT_MODEL_ARGS=(
     --num-layers 32 
     --hidden-size 4096 
     --num-attention-heads 32 
-    --seq-length 32768 
+    --seq-length 8192 
     --max-position-embeddings 32768 
     --ffn-hidden-size 10880
 )
@@ -52,7 +52,7 @@ TRAINING_ARGS=(
 )
 
 MODEL_PARALLEL_ARGS=(
-	--tensor-model-parallel-size 4
+	--tensor-model-parallel-size 2
 	--context-parallel-size 2
     --use-flash-attn
 )
@@ -73,10 +73,11 @@ EVAL_AND_LOGGING_ARGS=(
     --eval-iters 10
 )
 # nsys profile -o profile --force-overwrite true --capture-range=cudaProfilerApi --capture-range-end=stop \
-torchrun ${DISTRIBUTED_ARGS[@]} pretrain_gpt.py \
+NVTE_FUSED_ATTN=0 torchrun ${DISTRIBUTED_ARGS[@]} pretrain_gpt.py \
     ${GPT_MODEL_ARGS[@]} \
     ${TRAINING_ARGS[@]} \
     ${MODEL_PARALLEL_ARGS[@]} \
     ${DATA_ARGS[@]} \
     ${EVAL_AND_LOGGING_ARGS[@]} \
-    #--profile
+    --use-flash-attn \
+    --profile
