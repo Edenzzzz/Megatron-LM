@@ -395,6 +395,7 @@ class ZeroBubbleVPipeScheduler:
                 ScheduleTimers.for_chunk(scheduled_node.chunk).b_cnt += 1
                 ScheduleTimers.for_chunk(scheduled_node.chunk).b.start()
                 mem_before = torch.cuda.memory_allocated()
+            
             input_tensor_grad = backward_step(
                 input_tensor, output_tensor, output_tensor_grad, self.model_type,
                 self.config
@@ -1290,13 +1291,13 @@ def get_zero_bubble_forward_backward_func():
                     max_activation = max(activation_cost, max_activation)
                 free_mem = memory_all - (torch.cuda.max_memory_allocated() // 1000000 - max_activation)
 
-                print(f'estimated max free memory for activations on rank {torch.distributed.get_rank()} \
-                    memory_free: {memory_free}, memory_all: {memory_all}, max_activation: {max_activation}, \
-                    max_allocated: {torch.cuda.max_memory_allocated() // 1000000}, \
-                    current_allocated: {torch.cuda.memory_allocated() // 1000000}, \
-                    free_mem: {free_mem}')
+                # print(f'estimated max free memory for activations on rank {torch.distributed.get_rank()} \
+                #     memory_free: {memory_free}, memory_all: {memory_all}, max_activation: {max_activation}, \
+                #     max_allocated: {torch.cuda.max_memory_allocated() // 1000000}, \
+                #     current_allocated: {torch.cuda.memory_allocated() // 1000000}, \
+                #     free_mem: {free_mem}')
 
-                print(f'rank {torch.distributed.get_rank()} mem summary {torch.cuda.memory_summary()}')
+                # print(f'rank {torch.distributed.get_rank()} mem summary {torch.cuda.memory_summary()}')
                 return free_mem
             schedule = update_schedule(scheduler,
                 *conclusion,

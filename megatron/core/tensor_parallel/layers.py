@@ -9,6 +9,7 @@ import warnings
 from typing import Callable, Optional
 
 import torch
+import torch.distributed
 import torch.nn.functional as F
 import torch.nn.init as init
 from torch.cuda.amp import custom_bwd, custom_fwd
@@ -380,6 +381,7 @@ class LinearWithGradAccumulationAndAsyncCommunication(torch.autograd.Function):
         not_split_bw = not get_args().enable_zero_bubble
         if not_split_bw:
             pre_processed_results = pre_process(input)
+        
         grad_input = grad_output.matmul(weight)
 
         def post_process(_pre_processed_results_):

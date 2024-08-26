@@ -9,14 +9,15 @@ VOCAB_FILE="gpt2/gpt2-vocab.json"
 MERGE_FILE="gpt2/gpt2-merges.txt"
 DATA_PATH="my-gpt2_text_document"
 
+# GPT 1b
 GPT_ARGS="
     --num-layers 24 \
     --hidden-size 2048 \
     --num-attention-heads 16 \
     --seq-length 1024 \
     --max-position-embeddings 4096 \
-    --micro-batch-size 1 \
-    --global-batch-size 4 \
+    --micro-batch-size 8 \
+    --global-batch-size 8 \
     --lr 0.00015 \
     --train-iters 500000 \
     --lr-decay-iters 320000 \
@@ -25,7 +26,7 @@ GPT_ARGS="
     --weight-decay 1e-2 \
     --lr-warmup-fraction .01 \
     --clip-grad 1.0 \
-    --fp16
+    --fp16 
 "
 
 DATA_ARGS="
@@ -42,9 +43,11 @@ OUTPUT_ARGS="
     --eval-iters 10
 "
 
-torchrun pretrain_gpt.py \
+torchrun --nproc_per_node 4 pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --save $CHECKPOINT_PATH \
-    --load $CHECKPOINT_PATH
+    --load $CHECKPOINT_PATH \
+    --pipeline-model-parallel-size 4 \
+    --zero-bubble-v-schedule   --allow-padding-num-layers --enable-optimizer-post-validation
